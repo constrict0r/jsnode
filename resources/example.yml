@@ -1,0 +1,8 @@
+---
+# Example file with js packages to install.
+
+packages_js:
+  - node-red
+  - node-red-dashboard
+  - name: request
+    version: 2.88.0

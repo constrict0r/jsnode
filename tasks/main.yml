@@ -1,0 +1,154 @@
+---
+- name: Display Role Details.
+  debug:
+    msg:
+      - '==================================================================='
+      - 'constrict0r.jsnode'
+      - 'Wrapper for yarn to install packages.'
+      - '==================================================================='
+
+- name: Collect facts - Distribution release.
+  setup:
+  when: unified is not variable_empty
+
+- name: Handle yarn packages.
+  debug:
+    msg:
+      - '-------------------------------------------------------------------'
+      - 'Processing yarn packages ...'
+      - '-------------------------------------------------------------------'
+  when: unified is not variable_empty
+
+- name: Ensure dependencies are installed.
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+    state: present
+  register: result
+  retries: 2
+  until: result is success
+  become: true
+  when:
+    - not ansible_check_mode
+    - unified is not variable_empty
+
+- name: Handle nodejs installation.
+  debug:
+    msg:
+      - '--------------------------------------------------------------------'
+      - 'Setting up nodejs ...'
+      - '--------------------------------------------------------------------'
+  when: unified is not variable_empty
+
+- name: Add nodejs repository keys.
+  apt_key:
+    url: https://is.gd/UzURYs
+    id: "68576280"
+    state: present
+  become: true
+  when:
+    - not ansible_check_mode
+    - unified is not variable_empty
+
+- name: Set nodesource URL.
+  set_fact:
+    node_url: 'https://deb.nodesource.com/node_12.x'
+
+- name: Add node repository to sources.
+  lineinfile:
+    path: /etc/apt/sources.list.d/node.list
+    line: "{{ item }}"
+    state: present
+    mode: 0440
+    create: true
+  with_items:
+    - "deb {{ node_url }} {{ ansible_distribution_release }} main"
+    - "deb-src {{ node_url }} {{ ansible_distribution_release }} main"
+  become: true
+  when:
+    - not ansible_check_mode
+    - unified is not variable_empty
+
+- name: Handle yarn installation.
+  debug:
+    msg:
+      - '-------------------------------------------------------------------'
+      - 'Setting up yarn ...'
+      - '-------------------------------------------------------------------'
+  when: unified is not variable_empty
+
+- name: Add yarn repository keys.
+  apt_key:
+    url: https://dl.yarnpkg.com/debian/pubkey.gpg
+    state: present
+  become: true
+  when:
+    - not ansible_check_mode
+    - unified is not variable_empty
+
+- name: Set yarn source
+  set_fact:
+    yarn_url: 'deb https://dl.yarnpkg.com/debian/ stable main'
+
+- name: Add yarn repository to sources.
+  lineinfile:
+    path: /etc/apt/sources.list.d/yarn.list
+    line: "{{ item }}"
+    state: present
+    mode: 0440
+    create: true
+  with_items:
+    - "{{ yarn_url }}"
+  become: true
+  when:
+    - not ansible_check_mode
+    - unified is not variable_empty
+
+- name: Update APT cache.
+  apt:
+    update_cache: true
+  register: result
+  retries: 2
+  until: result is success
+  become: true
+  when:
+    - not ansible_check_mode
+    - unified is not variable_empty
+
+- name: Install nodejs and yarn.
+  apt:
+    name: ['nodejs', 'yarn']
+    state: present
+  register: result
+  retries: 2
+  until: result is success
+  become: true
+  when:
+    - not ansible_check_mode
+    - unified is not variable_empty
+
+- name: Install yarn packages without version.
+  yarn:
+    name: "{{ item }}"
+    global: true
+  with_items: "{{ unified }}"
+  become: true
+  changed_when: false
+  when:
+    - not ansible_check_mode
+    - unified is not variable_empty
+    - item.name is undefined
+
+- name: Install yarn packages with version.
+  yarn:
+    name: "{{ item.name }}"
+    version: "{{ item.version }}"
+    global: true
+  with_items: "{{ unified }}"
+  become: true
+  changed_when: false
+  when:
+    - not ansible_check_mode
+    - unified is not variable_empty
+    - item.name is defined
