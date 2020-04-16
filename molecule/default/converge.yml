@@ -32,9 +32,7 @@
 
   roles:
     - role: jsnode
-      packages_js: []
-      configuration: https://is.gd/BHgGUt
-      expand: true
+      configuration: https://is.gd/U9FWFk
 
   post_tasks:
     - name: Run verification tests.
